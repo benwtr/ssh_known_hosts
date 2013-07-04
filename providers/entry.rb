@@ -37,7 +37,7 @@ action :create do
   ruby_block "add #{new_resource.host} to #{node['ssh_known_hosts']['file']}" do
     block do
       file = ::Chef::Util::FileEdit.new(node['ssh_known_hosts']['file'])
-      file.insert_line_if_no_match(/#{Regexp.escape(comment)}|#{Regexp.escape(key)}/, key)
+      file.insert_line_if_no_match(/#{Regexp.escape(comment)}|#{Regexp.escape(key)}/, "#{new_resource.host} #{key}")
       file.write_file
     end
   end

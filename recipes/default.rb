@@ -37,9 +37,14 @@ else
                            'host_dsa_public' => [ 'keys', 'ssh', 'host_dsa_public' ]
                          }
                         ).collect do |host|
+                          key = if host['host_rsa_public']
+                            "ssh-rsa #{host['host_rsa_public']}"
+                          elsif entry['host_dsa_public']
+                            "ssh-dss #{host['host_dsa_public']}"
+                          end
                           {
                             'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
-                            'key' => host['host_rsa_public'] || host['host_dsa_public']
+                            'key'  => key
                           }
   end
 end
@@ -49,9 +54,14 @@ end
 begin
   hosts += data_bag('ssh_known_hosts').collect do |item|
     entry = data_bag_item('ssh_known_hosts', item)
+    key = if entry['rsa']
+      "ssh-rsa #{entry['rsa']}"
+    elsif entry['dsa']
+      "ssh-dss #{entry['rsa']}"
+    end
     {
       'fqdn' => entry['fqdn'] || entry['ipaddress'] || entry['hostname'],
-      'key'  => entry['rsa'] || entry['dsa']
+      'key'  => key
     }
   end
 rescue
