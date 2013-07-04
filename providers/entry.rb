@@ -18,10 +18,22 @@
 #
 
 action :create do
-  key = (new_resource.key || `ssh-keyscan -H #{new_resource.host} 2>&1`)
-  comment = key.split("\n").first || ""
+  if new_resource.key
+    targets = []
+    targets << new_resource.host
+    targets << new_resource.ipaddress unless new_resource.ipaddress.nil?
 
-  Chef::Application.fatal! "Could not resolve #{new_resource.host}" if key =~ /getaddrinfo/
+    host_list = targets.join ','
+  else
+    keyscan_output = `ssh-keyscan -H #{new_resource.host} 2>&1`.split("\n").reject { |l| l =~ /^#/ }
+    key_line = keyscan_output[0]
+
+    Chef::Application.fatal! "Could not resolve #{new_resource.host}" if key_line =~ /^getaddrinfo/
+
+    host_list = key_line.match(/^(.*) ssh-(rsa|dsa)/)[1]
+  end
+
+  key_line = "#{host_list} #{new_resource.key}"
 
   # Ensure that the file exists and has minimal content (required by Chef::Util::FileEdit)
   file node['ssh_known_hosts']['file'] do
@@ -34,10 +46,10 @@ action :create do
   end
 
   # Use a Ruby block to edit the file
-  ruby_block "add #{new_resource.host} to #{node['ssh_known_hosts']['file']}" do
+  ruby_block "add #{new_resource.host} (#{host_list}) to #{node['ssh_known_hosts']['file']}" do
     block do
       file = ::Chef::Util::FileEdit.new(node['ssh_known_hosts']['file'])
-      file.insert_line_if_no_match(/#{Regexp.escape(comment)}|#{Regexp.escape(key)}/, "#{new_resource.host} #{key}")
+      file.insert_line_if_no_match(/#{Regexp.escape(host_list)}/, key_line)
       file.write_file
     end
   end

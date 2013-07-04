@@ -44,7 +44,8 @@ else
                           end
                           {
                             'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
-                            'key'  => key
+                            'ipaddress' => host['ipaddress'],
+                            'key'       => key
                           }
   end
 end
@@ -60,8 +61,9 @@ begin
       "ssh-dss #{entry['rsa']}"
     end
     {
-      'fqdn' => entry['fqdn'] || entry['ipaddress'] || entry['hostname'],
-      'key'  => key
+      'fqdn'      => entry['fqdn'] || entry['ipaddress'] || entry['hostname'],
+      'ipaddress' => entry['ipaddress'],
+      'key'       => key
     }
   end
 rescue
@@ -73,6 +75,7 @@ hosts.each do |host|
   unless host['key'].nil?
     # The key was specified, so use it
     ssh_known_hosts_entry host['fqdn'] do
+      ipaddress host['ipaddress']
       key host['key']
     end
   else
