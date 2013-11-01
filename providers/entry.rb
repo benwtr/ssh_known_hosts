@@ -22,6 +22,7 @@ action :create do
     targets = []
     targets << new_resource.host
     targets << new_resource.ipaddress unless new_resource.ipaddress.nil?
+    targets << new_resource.aliases unless new_resource.aliases.nil?
 
     host_list = targets.join ','
   else
