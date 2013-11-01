@@ -45,7 +45,8 @@ else
                           {
                             'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
                             'ipaddress' => host['ipaddress'],
-                            'key'       => key
+                            'key'       => key,
+                            'hostname'  => host['hostname']
                           }
   end
 end
@@ -63,6 +64,7 @@ begin
     {
       'fqdn'      => entry['fqdn'] || entry['ipaddress'] || entry['hostname'],
       'ipaddress' => entry['ipaddress'],
+      'aliases'   => entry['aliases'],
       'key'       => key
     }
   end
@@ -76,6 +78,7 @@ hosts.each do |host|
     # The key was specified, so use it
     ssh_known_hosts_entry host['fqdn'] do
       ipaddress host['ipaddress']
+      aliases [ host['hostname'] ] unless host['hostname'] == host['fqdn']
       key host['key']
     end
   else
