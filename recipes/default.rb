@@ -35,22 +35,28 @@ else
                            'ipaddress' => [ 'ipaddress' ],
                            'interfaces' => [ 'network', 'interfaces' ],
                            'host_rsa_public' => [ 'keys', 'ssh', 'host_rsa_public' ],
-                           'host_dsa_public' => [ 'keys', 'ssh', 'host_dsa_public' ]
+                           'host_dsa_public' => [ 'keys', 'ssh', 'host_dsa_public' ],
+                           'ec2_public_hostname' => [ 'ec2', 'public_hostname' ],
+                           'ec2_public_ipv4' => [ 'ec2', 'public_ipv4' ]
                          }
-                        ).collect do |host|
-                          key = if host['host_rsa_public']
-                            "ssh-rsa #{host['host_rsa_public']}"
-                          elsif entry['host_dsa_public']
-                            "ssh-dss #{host['host_dsa_public']}"
-                          end
-                          ip_addresses = host['interfaces'].collect{|interface,v| v['addresses'].collect{|addr,p| addr if p['family'] == 'inet' } }.flatten.compact.reject{|r| r =~ /^127/ }.reject{|r| r == host['ipaddress'] }
-                          {
-                            'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
-                            'ipaddress' => host['ipaddress'],
-                            'aliases'   => ip_addresses,
-                            'key'       => key,
-                            'hostname'  => host['hostname']
-                          }
+                         ).collect do |host|
+    key = if host['host_rsa_public']
+            "ssh-rsa #{host['host_rsa_public']}"
+          elsif entry['host_dsa_public']
+            "ssh-dss #{host['host_dsa_public']}"
+          end
+    aliases = []
+    ip_addresses = host['interfaces'].collect{|interface,v| v['addresses'].collect{|addr,p| addr if p['family'] == 'inet' } }.flatten.compact.reject{|r| r =~ /^127/ }.reject{|r| r == host['ipaddress'] }
+    aliases += ip_addresses
+    aliases += [ host['ec2_public_hostname'] ] unless host['ec2_public_hostname'].nil?
+    aliases += [ host['ec2_public_ipv4'] ] unless host['ec2_public_ipv4'].nil?
+    {
+      'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
+      'ipaddress' => host['ipaddress'],
+      'aliases'   => aliases,
+      'key'       => key,
+      'hostname'  => host['hostname']
+    }
   end
 end
 
