@@ -33,6 +33,7 @@ else
                            'hostname' => [ 'hostname' ],
                            'fqdn'     => [ 'fqdn' ],
                            'ipaddress' => [ 'ipaddress' ],
+                           'interfaces' => [ 'network', 'interfaces' ],
                            'host_rsa_public' => [ 'keys', 'ssh', 'host_rsa_public' ],
                            'host_dsa_public' => [ 'keys', 'ssh', 'host_dsa_public' ]
                          }
@@ -42,9 +43,11 @@ else
                           elsif entry['host_dsa_public']
                             "ssh-dss #{host['host_dsa_public']}"
                           end
+                          ip_addresses = host['interfaces'].collect{|interface,v| v['addresses'].collect{|addr,p| addr if p['family'] == 'inet' } }.flatten.compact.reject{|r| r =~ /^127/ }.reject{|r| r == host['ipaddress'] }
                           {
                             'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
                             'ipaddress' => host['ipaddress'],
+                            'aliases'   => ip_addresses,
                             'key'       => key,
                             'hostname'  => host['hostname']
                           }
@@ -76,9 +79,11 @@ end
 hosts.each do |host|
   unless host['key'].nil?
     # The key was specified, so use it
+    aliases = host['aliases']
+    aliases += [ host['hostname'] ] unless host['hostname'] == host['fqdn']
     ssh_known_hosts_entry host['fqdn'] do
       ipaddress host['ipaddress']
-      aliases [ host['hostname'] ] unless host['hostname'] == host['fqdn']
+      aliases aliases
       key host['key']
     end
   else
